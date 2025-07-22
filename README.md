@@ -82,22 +82,22 @@ Search for Dota 2 player named "miracle"
 
 #### Hero Analysis
 ```
-Get most played heroes for account ID 105248644
+Get most played heroes for account ID 105248644 or account name "miracle"
 ```
 
 #### Draft Strategy
 ```
-Suggest draft picks with ally heroes [1, 5] and enemy heroes [74, 76]
+Suggest draft picks with ally heroes Anti-Mage and Invoker and enemy heroes vengeful Spirit and Juggernaut
 ```
 
 #### Matchup Intelligence
 ```
-Get hero matchups for hero ID 74
+Get hero matchups for Axe
 ```
 
 #### Build Analysis
 ```
-Get item builds for account ID 105248644 playing hero ID 8
+Get item builds for account ID 105248644 or account name Pr1m3vAL playing Bloodseeker
 ```
 
 ### Workflow Example
