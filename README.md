@@ -36,7 +36,7 @@ A powerful Model Context Protocol (MCP) server for Dota 2 opponent analysis and 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/dota2-mcp-server.git
+   git clone https://github.com/daedalus-s/dota2-mcp-server.git
    cd dota2-mcp-server
    ```
 
