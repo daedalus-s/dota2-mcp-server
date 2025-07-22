@@ -137,6 +137,41 @@ interface HeroStats {
   '8_win': number;
 }
 
+interface PlayerMatch {
+  match_id: number;
+  player_slot: number;
+  radiant_win: boolean;
+  duration: number;
+  game_mode: number;
+  lobby_type: number;
+  hero_id: number;
+  start_time: number;
+  version: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  skill: number;
+  leaver_status: number;
+  party_size: number;
+  average_rank?: number;
+  xp_per_min?: number;
+  gold_per_min?: number;
+  hero_damage?: number;
+  tower_damage?: number;
+  hero_healing?: number;
+  last_hits?: number;
+  denies?: number;
+  level?: number;
+}
+
+interface PerformancePattern {
+  category: string;
+  pattern: string;
+  confidence: number;
+  sample_size: number;
+  recommendation: string;
+}
+
 interface GameItem {
   id: number;
   img: string;
@@ -327,6 +362,50 @@ class Dota2MCPServer {
             },
             required: ['ally_heroes', 'enemy_heroes']
           }
+        },
+        {
+          name: 'get_meta_analysis',
+          description: 'Get current Dota 2 meta analysis including trending heroes, win rates by rank bracket, and patch insights',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              rank_bracket: {
+                type: 'string',
+                description: 'Rank bracket to analyze (herald, guardian, crusader, archon, legend, ancient, divine, immortal, pro)',
+                default: 'all'
+              },
+              focus: {
+                type: 'string',
+                description: 'Analysis focus: trending, winrates, pickrates, or overview',
+                default: 'overview'
+              }
+            },
+            required: []
+          }
+        },
+        {
+          name: 'analyze_performance_patterns',
+          description: 'Analyze a players performance patterns to identify strengths, weaknesses, and improvement areas',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              account_id: {
+                type: 'number',
+                description: 'The account ID of the player to analyze'
+              },
+              match_limit: {
+                type: 'number',
+                description: 'Number of recent matches to analyze (default: 50)',
+                default: 50
+              },
+              analysis_depth: {
+                type: 'string',
+                description: 'Depth of analysis: basic, detailed, or comprehensive',
+                default: 'detailed'
+              }
+            },
+            required: ['account_id']
+          }
         }
       ]
     }));
@@ -373,6 +452,17 @@ class Dota2MCPServer {
               args.ally_heroes as number[],
               args.enemy_heroes as number[],
               args.player_account_id as number || null
+            );
+          case 'get_meta_analysis':
+            return await this.getMetaAnalysis(
+              args.rank_bracket as string || 'all',
+              args.focus as string || 'overview'
+            );
+          case 'analyze_performance_patterns':
+            return await this.analyzePerformancePatterns(
+              args.account_id as number,
+              args.match_limit as number || 50,
+              args.analysis_depth as string || 'detailed'
             );
           default:
             throw new McpError(
@@ -1216,6 +1306,462 @@ Profile URL: ${player.profileurl || 'Not available'}`
     });
     
     return Array.from(roles);
+  }
+
+  private async getMetaAnalysis(rankBracket: string = 'all', focus: string = 'overview') {
+    try {
+      // Ensure we have hero data cached
+      if (!this.heroesCache) {
+        this.heroesCache = await this.apiRequest('/heroes');
+      }
+      if (!this.heroStatsCache) {
+        this.heroStatsCache = await this.apiRequest('/heroStats');
+      }
+
+      if (!this.heroesCache || !this.heroStatsCache) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Failed to load hero data for meta analysis.'
+            }
+          ]
+        };
+      }
+
+      // Map bracket names to API numbers
+      const bracketMap: { [key: string]: string } = {
+        'herald': '1',
+        'guardian': '2', 
+        'crusader': '3',
+        'archon': '4',
+        'legend': '5',
+        'ancient': '6',
+        'divine': '7',
+        'immortal': '8',
+        'pro': 'pro',
+        'all': '7' // Default to Divine bracket for "all"
+      };
+
+      const bracket = bracketMap[rankBracket.toLowerCase()] || '7';
+      
+      // Combine hero data with stats
+      const heroMetaData = this.heroesCache.map(hero => {
+        const stats = this.heroStatsCache!.find(s => s.id === hero.id);
+        if (!stats) return null;
+
+        const pickKey = bracket === 'pro' ? 'pro_pick' : `${bracket}_pick` as keyof HeroStats;
+        const winKey = bracket === 'pro' ? 'pro_win' : `${bracket}_win` as keyof HeroStats;
+        const banKey = 'pro_ban'; // Only pro has ban data
+
+        return {
+          ...hero,
+          pickRate: (stats[pickKey] as number) || 0,
+          winRate: (stats[winKey] as number) || 0,
+          banRate: bracket === 'pro' ? ((stats[banKey] as number) || 0) : 0,
+          netScore: ((stats[winKey] as number) || 0) * ((stats[pickKey] as number) || 0) / 100
+        };
+      }).filter((hero): hero is NonNullable<typeof hero> => hero !== null && hero.pickRate > 0);
+
+      let result = `📈 DOTA 2 META ANALYSIS\n`;
+      result += `Rank Bracket: ${rankBracket.toUpperCase()} | Focus: ${focus.toUpperCase()}\n\n`;
+
+      if (focus === 'trending' || focus === 'overview') {
+        // Most picked heroes
+        const mostPicked = [...heroMetaData]
+          .sort((a, b) => b.pickRate - a.pickRate)
+          .slice(0, 15);
+
+        result += `🔥 MOST PICKED HEROES:\n`;
+        mostPicked.forEach((hero, index) => {
+          result += `${index + 1}. ${hero.localized_name}: ${hero.pickRate.toFixed(1)}% pick rate (${hero.winRate.toFixed(1)}% win rate)\n`;
+        });
+        result += '\n';
+      }
+
+      if (focus === 'winrates' || focus === 'overview') {
+        // Highest win rate heroes (minimum pick rate threshold)
+        const minPickRate = rankBracket === 'pro' ? 5 : 3;
+        const highestWinRate = [...heroMetaData]
+          .filter(hero => hero.pickRate >= minPickRate)
+          .sort((a, b) => b.winRate - a.winRate)
+          .slice(0, 15);
+
+        result += `🏆 HIGHEST WIN RATE HEROES (min ${minPickRate}% pick rate):\n`;
+        highestWinRate.forEach((hero, index) => {
+          result += `${index + 1}. ${hero.localized_name}: ${hero.winRate.toFixed(1)}% win rate (${hero.pickRate.toFixed(1)}% pick rate)\n`;
+        });
+        result += '\n';
+      }
+
+      let mostBanned: typeof heroMetaData = [];
+      if (bracket === 'pro' && (focus === 'overview' || focus === 'pickrates')) {
+        // Most banned heroes (pro only)
+        mostBanned = [...heroMetaData]
+          .filter(hero => hero.banRate > 0)
+          .sort((a, b) => b.banRate - a.banRate)
+          .slice(0, 10);
+
+        result += `🚫 MOST BANNED HEROES (Pro Scene):\n`;
+        mostBanned.forEach((hero, index) => {
+          result += `${index + 1}. ${hero.localized_name}: ${hero.banRate.toFixed(1)}% ban rate\n`;
+        });
+        result += '\n';
+      }
+
+      // Meta strength analysis
+      const strongHeroes = [...heroMetaData]
+        .filter(hero => hero.winRate >= 52 && hero.pickRate >= 5)
+        .sort((a, b) => b.netScore - a.netScore)
+        .slice(0, 10);
+
+      result += `⚡ META POWERHOUSES (High Pick + Win Rate):\n`;
+      strongHeroes.forEach((hero, index) => {
+        result += `${index + 1}. ${hero.localized_name}: ${hero.winRate.toFixed(1)}% WR, ${hero.pickRate.toFixed(1)}% PR\n`;
+      });
+
+      // Role analysis
+      result += `\n🎭 ROLE BREAKDOWN:\n`;
+      const roleStats: { [role: string]: { heroes: number; avgWinRate: number; avgPickRate: number } } = {};
+      
+      heroMetaData.forEach(hero => {
+        hero.roles.forEach(role => {
+          if (!roleStats[role]) {
+            roleStats[role] = { heroes: 0, avgWinRate: 0, avgPickRate: 0 };
+          }
+          roleStats[role].heroes++;
+          roleStats[role].avgWinRate += hero.winRate;
+          roleStats[role].avgPickRate += hero.pickRate;
+        });
+      });
+
+      Object.entries(roleStats).forEach(([role, stats]) => {
+        const avgWR = (stats.avgWinRate / stats.heroes).toFixed(1);
+        const avgPR = (stats.avgPickRate / stats.heroes).toFixed(1);
+        result += `${role}: ${avgWR}% avg WR, ${avgPR}% avg PR (${stats.heroes} heroes)\n`;
+      });
+
+      // Meta insights
+      result += `\n💡 META INSIGHTS:\n`;
+      
+      const totalHeroes = heroMetaData.length;
+      const balancedHeroes = heroMetaData.filter(h => h.winRate >= 48 && h.winRate <= 52).length;
+      const balanceScore = (balancedHeroes / totalHeroes * 100).toFixed(1);
+      
+      result += `• Meta Balance: ${balanceScore}% of heroes have 48-52% win rate\n`;
+      
+      const dominantHeroes = heroMetaData.filter(h => h.winRate > 55 && h.pickRate > 10).length;
+      if (dominantHeroes > 0) {
+        result += `• ${dominantHeroes} heroes are currently dominant (>55% WR, >10% PR)\n`;
+      }
+      
+      const avgPickRate = (heroMetaData.reduce((sum, h) => sum + h.pickRate, 0) / totalHeroes).toFixed(1);
+      result += `• Average pick rate: ${avgPickRate}%\n`;
+
+      if (focus === 'overview') {
+        result += `\n📋 QUICK RECOMMENDATIONS:\n`;
+        result += `• Strong Picks: ${strongHeroes.slice(0, 3).map(h => h.localized_name).join(', ')}\n`;
+        
+        const weakHeroes = heroMetaData.filter(h => h.winRate < 45 && h.pickRate > 5).slice(0, 3);
+        result += `• Avoid: ${weakHeroes.map(h => h.localized_name).join(', ') || 'None identified'}\n`;
+        
+        if (bracket === 'pro' && mostBanned.length > 0) {
+          const mustBans = mostBanned.slice(0, 3).map(h => h.localized_name).join(', ');
+          result += `• Priority Bans: ${mustBans}\n`;
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: result
+          }
+        ]
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to get meta analysis: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async analyzePerformancePatterns(accountId: number, matchLimit: number = 50, analysisDepth: string = 'detailed') {
+    try {
+      // Ensure we have hero data cached
+      if (!this.heroesCache) {
+        this.heroesCache = await this.apiRequest('/heroes');
+      }
+
+      // Get player's recent matches
+      const matches: PlayerMatch[] = await this.apiRequest(`/players/${accountId}/matches?limit=${matchLimit}`);
+      
+      if (!matches || matches.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'No recent matches found for performance analysis.'
+            }
+          ]
+        };
+      }
+
+      const patterns: PerformancePattern[] = [];
+      let result = `🔍 PERFORMANCE PATTERN ANALYSIS\n`;
+      result += `Player Account ID: ${accountId}\n`;
+      result += `Matches Analyzed: ${matches.length}\n`;
+      result += `Analysis Depth: ${analysisDepth.toUpperCase()}\n\n`;
+
+      // Basic win rate analysis
+      const wins = matches.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+      const winRate = (wins / matches.length * 100).toFixed(1);
+      result += `📊 OVERALL PERFORMANCE:\n`;
+      result += `Current Win Rate: ${winRate}% (${wins}/${matches.length})\n\n`;
+
+      // Game duration patterns
+      const shortGames = matches.filter(m => m.duration < 1800); // <30min
+      const mediumGames = matches.filter(m => m.duration >= 1800 && m.duration < 2400); // 30-40min
+      const longGames = matches.filter(m => m.duration >= 2400); // >40min
+
+      const shortWins = shortGames.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+      const mediumWins = mediumGames.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+      const longWins = longGames.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+
+      result += `⏱️ GAME DURATION PATTERNS:\n`;
+      
+      if (shortGames.length > 0) {
+        const shortWR = (shortWins / shortGames.length * 100).toFixed(1);
+        result += `Short Games (<30min): ${shortWR}% win rate (${shortWins}/${shortGames.length})\n`;
+        
+        if (parseFloat(shortWR) > parseFloat(winRate) + 5) {
+          patterns.push({
+            category: 'Timing',
+            pattern: 'Strong in short games',
+            confidence: 0.8,
+            sample_size: shortGames.length,
+            recommendation: 'Focus on early game aggression and tempo'
+          });
+        } else if (parseFloat(shortWR) < parseFloat(winRate) - 5) {
+          patterns.push({
+            category: 'Timing',
+            pattern: 'Weak in short games',
+            confidence: 0.8,
+            sample_size: shortGames.length,
+            recommendation: 'Work on laning phase and early game execution'
+          });
+        }
+      }
+
+      if (mediumGames.length > 0) {
+        const mediumWR = (mediumWins / mediumGames.length * 100).toFixed(1);
+        result += `Medium Games (30-40min): ${mediumWR}% win rate (${mediumWins}/${mediumGames.length})\n`;
+      }
+
+      if (longGames.length > 0) {
+        const longWR = (longWins / longGames.length * 100).toFixed(1);
+        result += `Long Games (>40min): ${longWR}% win rate (${longWins}/${longGames.length})\n`;
+        
+        if (parseFloat(longWR) > parseFloat(winRate) + 5) {
+          patterns.push({
+            category: 'Timing',
+            pattern: 'Strong in late game',
+            confidence: 0.8,
+            sample_size: longGames.length,
+            recommendation: 'Good at scaling - consider late game heroes'
+          });
+        } else if (parseFloat(longWR) < parseFloat(winRate) - 5) {
+          patterns.push({
+            category: 'Timing',
+            pattern: 'Struggles in late game',
+            confidence: 0.8,
+            sample_size: longGames.length,
+            recommendation: 'Focus on closing games earlier or late game decision making'
+          });
+        }
+      }
+
+      // KDA patterns
+      const avgKills = matches.reduce((sum, m) => sum + m.kills, 0) / matches.length;
+      const avgDeaths = matches.reduce((sum, m) => sum + m.deaths, 0) / matches.length;
+      const avgAssists = matches.reduce((sum, m) => sum + m.assists, 0) / matches.length;
+      const kdaRatio = (avgKills + avgAssists) / Math.max(avgDeaths, 1);
+
+      result += `\n💀 COMBAT PATTERNS:\n`;
+      result += `Average KDA: ${avgKills.toFixed(1)}/${avgDeaths.toFixed(1)}/${avgAssists.toFixed(1)} (${kdaRatio.toFixed(2)} ratio)\n`;
+
+      if (avgDeaths > 8) {
+        patterns.push({
+          category: 'Combat',
+          pattern: 'High death count',
+          confidence: 0.9,
+          sample_size: matches.length,
+          recommendation: 'Focus on positioning and map awareness'
+        });
+      }
+
+      if (avgAssists > avgKills * 1.5) {
+        patterns.push({
+          category: 'Combat',
+          pattern: 'Team fight oriented',
+          confidence: 0.8,
+          sample_size: matches.length,
+          recommendation: 'Good team fighter - consider playmaking heroes'
+        });
+      }
+
+      // Role performance analysis
+      const rolePerformance: { [role: string]: { games: number; wins: number; } } = {};
+      
+      matches.forEach(match => {
+        const hero = this.heroesCache!.find(h => h.id === match.hero_id);
+        if (hero && hero.roles) {
+          hero.roles.forEach(role => {
+            if (!rolePerformance[role]) {
+              rolePerformance[role] = { games: 0, wins: 0 };
+            }
+            rolePerformance[role].games++;
+            if ((match.player_slot < 128) === match.radiant_win) {
+              rolePerformance[role].wins++;
+            }
+          });
+        }
+      });
+
+      result += `\n🎭 ROLE PERFORMANCE:\n`;
+      Object.entries(rolePerformance)
+        .filter(([role, stats]) => stats.games >= 3)
+        .sort(([,a], [,b]) => (b.wins/b.games) - (a.wins/a.games))
+        .forEach(([role, stats]) => {
+          const roleWR = (stats.wins / stats.games * 100).toFixed(1);
+          result += `${role}: ${roleWR}% win rate (${stats.wins}/${stats.games} games)\n`;
+          
+          if (parseFloat(roleWR) > parseFloat(winRate) + 10 && stats.games >= 5) {
+            patterns.push({
+              category: 'Role',
+              pattern: `Excels at ${role} role`,
+              confidence: 0.9,
+              sample_size: stats.games,
+              recommendation: `Consider more ${role} heroes`
+            });
+          } else if (parseFloat(roleWR) < parseFloat(winRate) - 10 && stats.games >= 5) {
+            patterns.push({
+              category: 'Role',
+              pattern: `Struggles with ${role} role`,
+              confidence: 0.8,
+              sample_size: stats.games,
+              recommendation: `Practice ${role} fundamentals or avoid this role`
+            });
+          }
+        });
+
+      if (analysisDepth === 'detailed' || analysisDepth === 'comprehensive') {
+        // Recent performance trends
+        const recentMatches = matches.slice(0, 10);
+        const recentWins = recentMatches.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+        const recentWR = (recentWins / recentMatches.length * 100).toFixed(1);
+
+        result += `\n📈 RECENT FORM (Last 10 games):\n`;
+        result += `Recent Win Rate: ${recentWR}% (${recentWins}/${recentMatches.length})\n`;
+
+        if (parseFloat(recentWR) > parseFloat(winRate) + 10) {
+          patterns.push({
+            category: 'Form',
+            pattern: 'Currently on good form',
+            confidence: 0.7,
+            sample_size: recentMatches.length,
+            recommendation: 'Player is improving - good time to face them'
+          });
+        } else if (parseFloat(recentWR) < parseFloat(winRate) - 10) {
+          patterns.push({
+            category: 'Form',
+            pattern: 'Currently struggling',
+            confidence: 0.7,
+            sample_size: recentMatches.length,
+            recommendation: 'Player may be in a slump - exploit with pressure'
+          });
+        }
+
+        // Performance vs different skill levels
+        const rankedMatches = matches.filter(m => m.lobby_type === 7); // Ranked matches
+        if (rankedMatches.length > 0) {
+          const rankedWins = rankedMatches.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+          const rankedWR = (rankedWins / rankedMatches.length * 100).toFixed(1);
+          result += `Ranked Performance: ${rankedWR}% (${rankedWins}/${rankedMatches.length})\n`;
+        }
+      }
+
+      if (analysisDepth === 'comprehensive') {
+        // Party vs solo performance
+        const soloMatches = matches.filter(m => m.party_size === 1);
+        const partyMatches = matches.filter(m => m.party_size > 1);
+
+        if (soloMatches.length > 0 && partyMatches.length > 0) {
+          const soloWins = soloMatches.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+          const partyWins = partyMatches.filter(m => (m.player_slot < 128) === m.radiant_win).length;
+          
+          const soloWR = (soloWins / soloMatches.length * 100).toFixed(1);
+          const partyWR = (partyWins / partyMatches.length * 100).toFixed(1);
+
+          result += `\n👥 PARTY vs SOLO:\n`;
+          result += `Solo Queue: ${soloWR}% (${soloWins}/${soloMatches.length})\n`;
+          result += `Party Queue: ${partyWR}% (${partyWins}/${partyMatches.length})\n`;
+
+          if (parseFloat(partyWR) > parseFloat(soloWR) + 10) {
+            patterns.push({
+              category: 'Context',
+              pattern: 'Much stronger in party',
+              confidence: 0.8,
+              sample_size: Math.min(soloMatches.length, partyMatches.length),
+              recommendation: 'Team coordination dependent - pressure individual play'
+            });
+          }
+        }
+      }
+
+      // Pattern summary
+      result += `\n🎯 IDENTIFIED PATTERNS:\n`;
+      if (patterns.length === 0) {
+        result += `No significant patterns detected. Player shows consistent performance across different contexts.\n`;
+      } else {
+        patterns.forEach((pattern, index) => {
+          result += `${index + 1}. ${pattern.category}: ${pattern.pattern}\n`;
+          result += `   Confidence: ${(pattern.confidence * 100).toFixed(0)}% | Sample: ${pattern.sample_size} games\n`;
+          result += `   💡 ${pattern.recommendation}\n\n`;
+        });
+      }
+
+      // Strategic recommendations
+      result += `🏆 STRATEGIC RECOMMENDATIONS:\n`;
+      const topPatterns = patterns.sort((a, b) => b.confidence - a.confidence).slice(0, 3);
+      
+      if (topPatterns.length > 0) {
+        result += `• Primary Weakness: ${topPatterns[0].pattern}\n`;
+        result += `• Exploitation Strategy: ${topPatterns[0].recommendation}\n`;
+        
+        if (topPatterns.length > 1) {
+          result += `• Secondary Pattern: ${topPatterns[1].pattern}\n`;
+        }
+      } else {
+        result += `• Well-rounded player with no obvious exploitable weaknesses\n`;
+        result += `• Focus on standard counter-picking and team coordination\n`;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: result
+          }
+        ]
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to analyze performance patterns: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   async run(): Promise<void> {
