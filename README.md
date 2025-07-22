@@ -1,282 +1,261 @@
-# 🎮 Dota 2 Smart Assistant
+# 🎮 Dota 2 MCP Server
 
-Transform Claude Desktop into your personal Dota 2 coach! Get instant insights about players, smart draft suggestions, and never lose a game to poor hero picks again.
+A comprehensive Model Context Protocol (MCP) server that integrates Claude Desktop with advanced Dota 2 analytics. Provides intelligent player analysis, strategic draft assistance, and real-time meta insights using the OpenDota API.
 
-![Dota 2 Smart Assistant](https://img.shields.io/badge/Dota%202-Smart%20Assistant-blue) ![Easy Setup](https://img.shields.io/badge/Setup-5%20Minutes-green) ![Free](https://img.shields.io/badge/100%25-Free-brightgreen) ![Works Offline](https://img.shields.io/badge/Works-Offline-orange)
+![Dota 2 MCP Server](https://img.shields.io/badge/MCP-Server-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-339933?logo=node.js&logoColor=white) ![OpenDota](https://img.shields.io/badge/OpenDota-API-red) ![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## 🤔 What Does This Do?
+## 🚀 Key Features
 
-Ever wondered "Who is this player?" or "What hero should I pick?" during a Dota 2 match? This tool gives you instant answers using AI!
+### 🔍 **Advanced Player Analytics**
+- **Comprehensive player search** and profile analysis by Steam name
+- **Statistical performance tracking** with automated pattern detection
+- **Behavioral analysis algorithms** that identify gameplay tendencies
+- **Win rate correlation analysis** across different game contexts
 
-### **Before** 
-- Picking heroes randomly and hoping for the best
-- Getting countered by opponents you know nothing about
-- Losing games because of poor draft decisions
-- Wondering why some heroes work better than others
+### ⚔️ **Strategic Intelligence System**
+- **Complete hero and item databases** with normalized naming conventions
+- **Matchup analysis engine** with statistical significance testing
+- **Build pattern recognition** using machine learning on match data
+- **Skill progression modeling** from large-scale dataset analysis
 
-### **After** 
-- Know your opponents' favorite heroes before the game starts
-- Get smart pick suggestions based on what the enemy team chose
-- Understand which heroes work best in the current patch
-- Make informed decisions instead of guessing
+### 🧠 **AI-Enhanced Draft Tools**
+- **Context-aware draft recommendations** based on team composition analysis
+- **Multi-bracket meta analysis** with real-time statistical updates
+- **Performance pattern algorithms** for opponent weakness identification
+- **Evidence-based counter-pick suggestions** with confidence scoring
 
-## ✨ What Can It Do?
+### 📊 **Real-Time Meta Intelligence**
+- **Patch-specific trend analysis** across all skill brackets
+- **Professional scene analytics** including tournament pick/ban data
+- **Role-based performance metrics** with statistical breakdowns
+- **Dynamic meta shift detection** and trend forecasting
 
-### 🔍 **Player Detective**
+## ⚡ Installation & Setup
+
+Integrate advanced Dota 2 analytics with Claude Desktop in minutes.
+
+### System Requirements
+- Node.js 18+ for optimal performance ⚙️
+- Claude Desktop application 🤖
+- Stable internet connection for API access 🌐
+
+### Installation Process
+
+1. **Repository Setup:**
+   ```bash
+   git clone https://github.com/daedalus-s/dota2-mcp-server.git
+   cd dota2-mcp-server
+   npm install
+   npm run build
+   ```
+
+2. **Claude Desktop Configuration:**
+   
+   Configure the MCP server in your Claude Desktop settings:
+
+   **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+   
+   **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+   ```json
+   {
+     "mcpServers": {
+       "dota2-mcp-server": {
+         "command": "node",
+         "args": ["/absolute/path/to/dota2-mcp-server/dist/index.js"],
+         "env": {}
+       }
+     }
+   }
+   ```
+
+3. **Activation:** Restart Claude Desktop to enable the integration 🎯
+
+## 💬 Usage Examples
+
+Execute sophisticated analysis through natural language queries in Claude Desktop:
+
+### 🕵️ **Player Intelligence Analysis**
 ```
-"Search for Dota 2 player named Miracle"
-```
-**You Get:** Their favorite heroes, win rates, recent performance, and play style
+Search for Dota 2 player named "miracle"
+→ Comprehensive profile with performance metrics and behavioral patterns
 
-### 🧠 **Smart Draft Helper**
-```
-"Suggest heroes for my team. Enemy picked Pudge and Invoker"
-```
-**You Get:** Perfect counter-picks with explanations why they work
+Get most played heroes for "miracle"
+→ Hero pool analysis with statistical confidence intervals
 
-### 📈 **What's Strong Right Now**
+Analyze performance patterns for "dendi"
+→ Advanced pattern detection with actionable insights
 ```
-"What heroes are strong in Divine rank?"
-```
-**You Get:** Current meta heroes, win rates, and what to avoid
 
-### 🎯 **Counter-Pick Master**
+### 🎯 **Strategic Analysis Operations**
 ```
-"What heroes counter Invoker?"
+Get hero matchups for Juggernaut
+→ Complete matchup matrix with win rate correlations
+
+Get meta analysis for divine rank bracket 
+→ Current meta statistics with trend analysis
+
+Suggest draft picks with ally heroes Pudge and Invoker and enemy heroes Slark and Crystal Maiden
+→ AI-generated recommendations with strategic reasoning
 ```
-**You Get:** Best counters with win percentage data
 
-### 🛡️ **Build Predictor**
+### 🛡️ **Build Intelligence Extraction**
 ```
-"How does this player build Juggernaut?"
+Get item builds for account name Pr1m3vAL playing Axe
+→ Build pattern analysis with playstyle classification
+
+Get hero ability builds for account name Ana playing Io
+→ Skill progression analysis with timing optimization
 ```
-**You Get:** Their typical item choices and whether they farm or fight
 
-## 🚀 Super Easy Setup
+## 🔧 Comprehensive Tool Suite
 
-### Step 1: Download What You Need
-- [Claude Desktop](https://claude.ai/desktop) (Free)
-- [Node.js](https://nodejs.org/) (Free)
+| Tool | Technical Capability | Implementation Focus |
+|------|---------------------|---------------------|
+| `search_player` | **Player profile resolution** | Steam API integration with data normalization |
+| `get_player_heroes` | **Statistical hero analysis** | Win rate calculation with confidence intervals |
+| `analyze_performance_patterns` | **🧠 ML pattern detection** | Behavioral modeling with trend analysis |
+| `get_meta_analysis` | **🔮 Meta intelligence engine** | Real-time statistical aggregation across brackets |
+| `suggest_draft_picks` | **🤖 AI recommendation system** | Multi-factor optimization with reasoning engine |
+| `get_hero_matchups` | **⚔️ Matchup correlation matrix** | Statistical significance testing on large datasets |
+| `get_item_builds` | **🔍 Build pattern classifier** | Machine learning on itemization sequences |
+| `get_hero_ability_builds` | **📊 Skill progression analyzer** | Temporal analysis of ability selection patterns |
+| `get_heroes` / `get_items` | **📚 Reference databases** | Normalized data structures with ID mapping |
 
-### Step 2: Get The Assistant
+## 🌐 Technical Architecture & Data Infrastructure
+
+### ⚡ **Data Pipeline Architecture**
+- **OpenDota API Integration** - Enterprise-grade REST API with comprehensive match databases
+- **Real-Time Statistical Processing** - Live aggregation across all skill brackets with temporal analysis
+- **Large-Scale Pattern Recognition** - Machine learning algorithms trained on millions of match records
+- **Intelligent Caching Layer** - Optimized data retrieval with automatic cache invalidation
+
+### 🏗️ **Technical Implementation**
+- **TypeScript** - Strongly typed codebase with comprehensive error handling
+- **Model Context Protocol** - Native Claude Desktop integration with seamless tool execution
+- **Node.js Runtime** - Cross-platform compatibility with asynchronous processing
+- **Modular Architecture** - Extensible design with clear separation of concerns
+
+### 📊 **Data Processing Features**
+- **Statistical Significance Testing** - Confidence intervals and sample size validation
+- **Temporal Analysis** - Time-series pattern detection for meta trends
+- **Multi-Dimensional Correlation** - Complex relationship modeling between game variables
+- **Real-Time Data Synchronization** - Live updates reflecting current game state
+
+**🔓 Open Architecture:** Public API access with no authentication requirements, ensuring reliability and accessibility.
+
+## ⚙️ Advanced Configuration
+
+### 🎯 **Analysis Depth Configuration**
+Configurable analysis granularity for performance optimization:
+- `basic` - Lightweight analysis for rapid data retrieval
+- `detailed` - Standard comprehensive analysis with pattern detection (default)
+- `comprehensive` - Full statistical modeling including contextual variables
+
+### 🏆 **Meta Analysis Parameters**
+Targeted analysis with configurable scope:
+- **Rank Brackets:** Granular targeting from `herald` through `immortal` to `pro`
+- **Analysis Focus:** Specialized views including `overview`, `trending`, `winrates`, `pickrates`
+
+### 💻 **Advanced Query Examples**
 ```bash
-# Copy these commands into your terminal/command prompt
-git clone https://github.com/daedalus-s/dota2-mcp-server.git
-cd dota2-mcp-server
-npm install
+# Deep statistical analysis with comprehensive pattern detection
+Analyze performance patterns for account : Pr1m3vAL with analysis depth comprehensive
+
+# Real-time meta intelligence for high-skill brackets
+Get meta analysis for rank bracket immortal with focus trending
+
+# Targeted win rate analysis for strategic planning
+Get meta analysis for rank bracket divine with focus winrates
+```
+
+## Development
+
+### Project Structure
+```
+dota2-mcp-server/
+├── src/
+│   └── index.ts          # Main server implementation
+├── dist/                 # Compiled output
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+### Building
+```bash
 npm run build
 ```
 
-### Step 3: Connect to Claude
-Create or edit this file:
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-- **Mac**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-Put this inside:
-```json
-{
-  "mcpServers": {
-    "dota2-assistant": {
-      "command": "node",
-      "args": ["C:\\path\\to\\your\\dota2-mcp-server\\dist\\index.js"],
-      "env": {}
-    }
-  }
-}
+### Development Mode
+```bash
+npm run dev
 ```
-*(Replace the path with where you downloaded the files)*
 
-### Step 4: Restart Claude Desktop
-Close it completely and open it again. Done! 🎉
+## Troubleshooting
 
-## 🎮 How to Use It
+### Server Not Recognized
+- Verify the absolute path in the Claude Desktop configuration
+- Ensure the project has been built successfully (`npm run build`)
+- Restart Claude Desktop completely
 
-### **During Hero Selection**
-1. **Scout your enemies:**
-   ```
-   "Search for player named [enemy player name]"
-   ```
+### Module Errors
+- Run `npm install` to reinstall dependencies
+- Check Node.js version (requires 18+)
 
-2. **Get counter-picks:**
-   ```
-   "What heroes counter Pudge?"
-   ```
+### API Failures
+- Check internet connection
+- OpenDota API may be temporarily unavailable
+- Some player profiles may be private
 
-3. **Get smart suggestions:**
-   ```
-   "Suggest heroes for my team. Enemy has Invoker and Anti-Mage"
-   ```
+### Data Issues
+- Hero/item names not showing: The server caches data on first use
+- Restart if seeing incomplete information
 
-### **Learning the Game**
-1. **Understand the meta:**
-   ```
-   "What heroes are strong right now?"
-   ```
+## 🤝 Contributing to the Project
 
-2. **Learn matchups:**
-   ```
-   "Show me Invoker's best and worst matchups"
-   ```
+Contributions from developers and Dota 2 enthusiasts is welcomed. This project benefits from community involvement in advancing analytical capabilities and improving technical implementation.
 
-3. **Analyze builds:**
-   ```
-   "How do good players build Pudge?"
-   ```
+### 🚀 **Development Workflow**
+1. **Fork** the repository and create a development branch
+2. **Implement** features following TypeScript best practices
+3. **Test** thoroughly with comprehensive error handling
+4. **Submit** pull requests with detailed technical documentation
 
-### **Improve Your Gameplay**
-1. **Find your weaknesses:**
-   ```
-   "Analyze my performance patterns"
-   ```
+### 🎯 **Priority Development Areas**
+- **🔬 Advanced Analytics** - Enhanced statistical models and pattern recognition algorithms
+- **⚡ Performance Optimization** - Improved data processing efficiency and caching strategies
+- **🎨 Data Visualization** - Enhanced output formatting and structured data presentation
+- **🛡️ Error Handling** - Robust exception management and graceful degradation
 
-2. **Track your progress:**
-   ```
-   "Show my recent matches and performance"
-   ```
+### 📋 **Technical Standards**
+- Follow established TypeScript conventions and type safety practices
+- Implement comprehensive error handling for API interactions
+- Include unit tests for new analytical functions
+- Document complex algorithms and data processing logic
 
-## 🏆 Real Examples
+*Contributions help advance the state of Dota 2 analytics and benefit the broader gaming community.*
 
-### **Before a Ranked Game**
-**You:** "Search for Dota 2 player named EnemyMidLaner"
+## 📈 Performance & Results
 
-**Assistant:** "Found player! They love playing Invoker (65% win rate, 50 games) and Pudge (58% win rate, 30 games). They struggle with Anti-Mage (32% win rate, 15 games). They tend to perform poorly in games longer than 45 minutes."
+**⚡ Efficient Setup** → **🧠 Advanced Analytics** → **🎯 Strategic Advantage** → **📊 Improved Performance**
 
-**You:** "What heroes counter Invoker?"
-
-**Assistant:** "Best counters: Anti-Mage (62% win rate vs Invoker), Storm Spirit (58% win rate), and Templar Assassin (56% win rate). Anti-Mage is especially strong because Invoker struggles against mobile heroes who can close gaps quickly."
-
-### **During Draft**
-**You:** "Suggest heroes for my team. Enemy picked Invoker and Pudge, we have Crystal Maiden"
-
-**Assistant:** "Strong picks: Anti-Mage (counters Invoker, fits with CM support), Storm Spirit (mobile vs both enemies), or Templar Assassin (good vs Invoker). Anti-Mage is recommended because the enemy lacks strong carries and you have good support."
-
-## 🎯 Who Is This For?
-
-### **New Players** 🌱
-- Learn which heroes work well together
-- Understand what makes heroes strong or weak
-- Get guidance instead of random picking
-- Improve faster with data-driven decisions
-
-### **Casual Players** 🎮
-- Win more games with better picks
-- Understand your opponents before games start
-- Learn the current meta without research
-- Make informed decisions in ranked
-
-### **Competitive Players** ⚔️
-- Scout opponents in ranked matches
-- Get detailed performance analysis
-- Optimize your hero pool based on data
-- Gain advantages through preparation
-
-### **Dota 2 Enthusiasts** 📊
-- Explore detailed statistics and trends
-- Understand the professional meta
-- Analyze your favorite players
-- Learn advanced game concepts
-
-## 🤖 Smart Features
-
-### **Instant Answers**
-Ask natural questions like:
-- "Who should I ban against this team?"
-- "What items does this player usually build?"
-- "Is Pudge good in the current patch?"
-- "What are my weak heroes I should avoid?"
-
-### **Learning Mode**
-The assistant explains its reasoning:
-- "Pick Anti-Mage because he counters their magic-heavy lineup"
-- "Avoid long games since this player excels in late game"
-- "Their support player struggles with positioning - pressure early"
-
-### **Always Up-to-Date**
-- Uses live data from OpenDota
-- Reflects current patch changes
-- Shows real player statistics
-- No outdated information
-
-## 🔒 Privacy & Safety
-
-- ✅ **100% Free** - No subscriptions or payments
-- ✅ **No Login Required** - No personal data needed  
-- ✅ **Public Data Only** - Uses publicly available match data
-- ✅ **Runs Locally** - Everything processes on your computer
-- ✅ **Open Source** - You can see exactly what it does
-
-## 🆘 Need Help?
-
-### **It is Not Working**
-1. Make sure Claude Desktop is completely closed and reopened
-2. Check that the file path in the config is correct
-3. Try rebuilding: `npm run build`
-4. Restart your computer if needed
-
-### **Can't Find Players**
-- Try the exact Steam display name
-- Some players have private profiles
-- Check spelling carefully
-
-### **No Suggestions**
-- Make sure you're asking clearly: "Suggest heroes for..."
-- Try with specific enemy heroes: "Enemy has Pudge and Invoker"
-
-### **Getting Errors**
-- Check your internet connection
-- OpenDota might be temporarily down
-- Try again in a few minutes
-
-## 🔄 What's Coming Next
-
-### **Soon**
-- ✨ Even smarter analysis
-- 📱 Mobile app version
-- 🎯 Personal coaching recommendations
-- 📊 Beautiful charts and graphs
-
-### **Future Ideas**
-- 🎮 Integration with Dota 2 client
-- 👥 Team analysis for party games
-- 🏆 Tournament bracket predictions
-- 📹 Replay analysis
-
-## 🤝 Join the Community
-
-- **Questions?** [Ask on GitHub](https://github.com/yourusername/dota2-mcp-server/discussions)
-- **Found a bug?** [Report it here](https://github.com/yourusername/dota2-mcp-server/issues)
-- **Want to help?** [Contribute on GitHub](https://github.com/yourusername/dota2-mcp-server)
-- **Share your success!** Tell us your ranking improvements!
-
-## 📋 Quick Commands Reference
-
-| What You Want | What to Ask |
-|---------------|-------------|
-| Scout a player | `"Search for Dota 2 player named [name]"` |
-| Counter-pick help | `"What heroes counter [hero name]?"` |
-| Draft suggestions | `"Suggest heroes for my team. Enemy has [heroes]"` |
-| Meta check | `"What heroes are strong right now?"` |
-| Build analysis | `"How do players build [hero name]?"` |
-| Your performance | `"Analyze my recent matches"` |
-| Learn matchups | `"Show [hero name] matchup data"` |
-
-## 🎯 Start Winning Today!
-
-1. **5 minutes** to set up
-2. **Instant** hero insights
-3. **Better** draft decisions
-4. **More** wins
-
-Stop guessing and start winning with data-driven Dota 2 decisions!
+Transform draft decision-making from intuition-based to data-driven analysis with comprehensive statistical backing.
 
 ---
 
-### 🚀 Ready to Rank Up?
-
-**[⬇️ Download Now](#super-easy-setup)** • **[❓ Get Help](#need-help)** • **[💬 Join Community](#join-the-community)**
-
-*Made with ❤️ by a Dota 2 player, for Dota 2 players*
+*Developed by Dota 2 players with love for the community.*
 
 ---
 
-**Disclaimer:** This tool provides analysis based on public match data. Individual results may vary. Dota 2 is a trademark of Valve Corporation.
+## License
+
+MIT License - see LICENSE file for details.
+
+## Acknowledgments
+
+- **OpenDota** for comprehensive match data API access
+- **Anthropic** for Model Context Protocol framework development  
+- **Valve Corporation** for Dota 2 and public match data availability
+
+**Disclaimer:** This tool provides statistical analysis based on publicly available match data. Individual results may vary based on implementation and usage patterns. Dota 2 is a trademark of Valve Corporation.
