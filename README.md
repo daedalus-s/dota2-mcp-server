@@ -11,6 +11,7 @@ A comprehensive Model Context Protocol (MCP) server that integrates Claude Deskt
 - **Statistical performance tracking** with automated pattern detection
 - **Behavioral analysis algorithms** that identify gameplay tendencies
 - **Win rate correlation analysis** across different game contexts
+- **Make sure you ask it really complex questions that would give you a real edge over your opponent as well as test the capabilities of the application.
 
 ### ⚔️ **Strategic Intelligence System**
 - **Complete hero and item databases** with normalized naming conventions
