@@ -256,6 +256,20 @@ class Dota2MCPServer {
           }
         },
         {
+          name: 'search_player_by_id',
+          description: 'Search for a Dota 2 player by Steam ID and get their profile information',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              steam_id: {
+                type: 'string',
+                description: 'The Steam ID (either Steam ID 64 or Steam ID 32) of the player to search for'
+              }
+            },
+            required: ['steam_id']
+          }
+        },
+        {
           name: 'get_player_heroes',
           description: 'Get most played and most effective heroes for a specific player',
           inputSchema: {
@@ -428,6 +442,8 @@ class Dota2MCPServer {
             return await this.getItems();
           case 'search_player':
             return await this.searchPlayer(args.steam_name as string);
+          case 'search_player_by_id':
+            return await this.searchPlayerById(args.steam_id as string);
           case 'get_player_heroes':
             return await this.getPlayerHeroes(args.account_id as number);
           case 'get_hero_ability_builds':
@@ -653,6 +669,60 @@ class Dota2MCPServer {
     }
   }
 
+  // Steam ID conversion utilities
+  private steamId64ToAccountId(steamId64: string): number {
+    // Steam ID 64 to Account ID conversion
+    // Account ID = Steam ID 64 - 76561197960265728
+    const steamId64BigInt = BigInt(steamId64);
+    const baseOffset = BigInt('76561197960265728');
+    return Number(steamId64BigInt - baseOffset);
+  }
+
+  private steamId32ToAccountId(steamId32: string): number {
+    // Steam ID 32 format: STEAM_0:Y:Z where Account ID = Z * 2 + Y
+    const match = steamId32.match(/^STEAM_[01]:([01]):(\d+)$/);
+    if (!match) {
+      throw new Error('Invalid Steam ID 32 format');
+    }
+    const Y = parseInt(match[1]);
+    const Z = parseInt(match[2]);
+    return Z * 2 + Y;
+  }
+
+  private parseAndConvertSteamId(steamId: string): number {
+    // Remove any whitespace
+    steamId = steamId.trim();
+    
+    // Check if it's already an account ID (8-10 digits)
+    if (/^\d{8,10}$/.test(steamId)) {
+      return parseInt(steamId);
+    }
+    
+    // Check if it's Steam ID 64 (17 digits starting with 7656119)
+    if (/^7656119\d{10}$/.test(steamId)) {
+      return this.steamId64ToAccountId(steamId);
+    }
+    
+    // Check if it's Steam ID 32 (STEAM_0:X:XXXXXX or STEAM_1:X:XXXXXX)
+    if (/^STEAM_[01]:[01]:\d+$/.test(steamId)) {
+      return this.steamId32ToAccountId(steamId);
+    }
+    
+    // Check if it's a Steam profile URL
+    const urlMatch = steamId.match(/(?:steamcommunity\.com\/(?:profiles\/(\d{17})|id\/([^\/]+)))/);
+    if (urlMatch) {
+      if (urlMatch[1]) {
+        // Profile ID from URL
+        return this.steamId64ToAccountId(urlMatch[1]);
+      } else {
+        // Custom URL - need to resolve this via Steam API (not supported in OpenDota directly)
+        throw new Error('Custom Steam URLs need to be resolved separately. Please use Steam ID directly.');
+      }
+    }
+    
+    throw new Error(`Unrecognized Steam ID format: ${steamId}. Supported formats: Account ID, Steam ID 64, Steam ID 32 (STEAM_0:X:XXXXX), or Steam profile URL.`);
+  }
+
   private async searchPlayer(steamName: string) {
     try {
       // Search for players by name
@@ -692,6 +762,101 @@ Profile URL: ${player.profileurl || 'Not available'}`
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to search for player: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+  }
+
+  private async searchPlayerById(steamId: string) {
+    try {
+      // Convert Steam ID to Account ID
+      let accountId: number;
+      try {
+        accountId = this.parseAndConvertSteamId(steamId);
+      } catch (conversionError) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error parsing Steam ID: ${conversionError instanceof Error ? conversionError.message : String(conversionError)}`
+            }
+          ]
+        };
+      }
+
+      // Get player details directly using account ID
+      const playerDetails = await this.apiRequest(`/players/${accountId}`);
+      
+      if (!playerDetails || !playerDetails.profile) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `No player found with Steam ID "${steamId}" (Account ID: ${accountId}). The profile might be private or the ID might be incorrect.`
+            }
+          ]
+        };
+      }
+
+      const profile = playerDetails.profile;
+      
+      // Format the response
+      let result = `✅ Found player by Steam ID!\n`;
+      result += `Player Name: ${profile.personaname || 'Unknown'}\n`;
+      result += `Account ID: ${accountId}\n`;
+      result += `Steam ID 64: ${profile.steamid || 'Unknown'}\n`;
+      
+      // Calculate Steam ID 32 from account ID
+      const steamId32Y = accountId % 2;
+      const steamId32Z = Math.floor(accountId / 2);
+      result += `Steam ID 32: STEAM_0:${steamId32Y}:${steamId32Z}\n`;
+      
+      result += `Country: ${profile.loccountrycode || 'Unknown'}\n`;
+      result += `Plus Subscriber: ${profile.plus ? 'Yes' : 'No'}\n`;
+      result += `Cheese: ${profile.cheese || 0}\n`;
+      
+      if (profile.last_login) {
+        result += `Last Login: ${new Date(profile.last_login).toLocaleDateString()}\n`;
+      }
+      
+      if (profile.profileurl) {
+        result += `Profile URL: ${profile.profileurl}\n`;
+      }
+
+      // Add rank information if available
+      if (playerDetails.rank_tier) {
+        const rankTier = playerDetails.rank_tier;
+        const rankNames = {
+          10: 'Herald', 20: 'Guardian', 30: 'Crusader', 40: 'Archon',
+          50: 'Legend', 60: 'Ancient', 70: 'Divine', 80: 'Immortal'
+        };
+        const baseTier = Math.floor(rankTier / 10) * 10;
+        const subTier = rankTier % 10;
+        const rankName = rankNames[baseTier as keyof typeof rankNames] || 'Unknown';
+        result += `Current Rank: ${rankName}${subTier > 0 ? ` [${subTier}]` : ''}\n`;
+      }
+
+      // Add MMR if available
+      if (playerDetails.solo_competitive_rank) {
+        result += `Solo MMR: ${playerDetails.solo_competitive_rank}\n`;
+      }
+      if (playerDetails.competitive_rank) {
+        result += `Party MMR: ${playerDetails.competitive_rank}\n`;
+      }
+
+      result += `\n🎯 Use Account ID ${accountId} for further analysis with other commands.`;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: result
+          }
+        ]
+      };
+    } catch (error) {
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to search for player by ID: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
